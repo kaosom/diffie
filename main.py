@@ -1,6 +1,6 @@
 import math
-import random
 import builtins
+import random 
 
 
 
@@ -10,33 +10,15 @@ def p(*args, sep=" ", end="\n", flush=False):
     _builtin_print(texto, end=end, flush=flush)
 
 print = p
+primos = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
 
 def es_primo(n):
     if n < 2:
         return False
-    pequeñas = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+    pequeñas = primos
     for p_ in pequeñas:
         if n % p_ == 0:
             return n == p_
-    d = n - 1
-    r = 0
-    while d % 2 == 0:
-        d //= 2
-        r += 1
-    for a in [2, 3, 5, 7, 11, 13, 17]:
-        if a % n == 0:
-            continue
-        x = pow(a, d, n)
-        if x == 1 or x == n - 1:
-            continue
-        ok = False
-        for _ in range(r - 1):
-            x = (x * x) % n
-            if x == n - 1:
-                ok = True
-                break
-        if not ok:
-            return False
     return True
 
 def factores_primos(n):
@@ -63,6 +45,17 @@ def es_generador(g, p_):
             return False
     return True
 
+def encontrar_generador(p_):
+    """Encuentra un generador para el grupo Z_p*"""
+    if not es_primo(p_):
+        return None
+    
+    phi = p_ - 1
+    for g in range(2, p_):
+        if es_generador(g, p_):
+            return g
+    return None
+
 def pot_mod_pasos(base, exp, mod):
     print(f"Cálculo de {base}^{exp} mod {mod}.")
     print(f"Exponente en binario: {exp:b}.")
@@ -85,6 +78,8 @@ def pot_mod_pasos(base, exp, mod):
 def validar_entradas(p_, g, a, b):
     if not es_primo(p_):
         raise ValueError("P debe ser primo.")
+    if p_ <= 3:
+        raise ValueError("P debe ser mayor a 3 para permitir claves privadas válidas.")
     if not (2 <= g <= p_ - 2):
         raise ValueError("G debe estar en el rango [2, P-2].")
     if not es_generador(g, p_):
@@ -132,17 +127,67 @@ def leer_entero(m):
 def menu():
     print("Implementación de Diffie-Hellman.")
     print("1) Ingresar P, G, Private_Alice, Private_Bob.")
-    print("2) Ejecutar ejemplo clásico (P=23, G=5, a=6, b=15).")
+    print("2) Ejecutar ejemplo clásico (P=x, G=y, a=z, b=w).")
     print("3) Salir.")
     op = input("Opción: ").strip()
     if op == "1":
         p_ = leer_entero("P: ")
+        while p_ > primos[-1] or p_ <= 3 or not es_primo(p_):
+            if not es_primo(p_):
+                print("P debe ser un número primo.")
+            elif p_ <= 3:
+                print("P debe ser mayor a 3 para permitir claves privadas válidas.")
+            else:
+                print("P debe ser menor o igual a 37 y que sea primo.")
+            p_ = leer_entero("P: ")
         g = leer_entero("G: ")
+        
+        while g < 2 or g > p_ - 2:
+            print("G debe estar en el rango [2, P-2].")
+            g = leer_entero("G: ")
+        
+        while not es_generador(g, p_):
+            print(f"G={g} no es generador de Z_{p_}*. Buscando un generador válido...")
+            g_original = g
+            g = 2
+            while not es_generador(g, p_) and g < p_:
+                g += 1
+            if g < p_:
+                print(f"Se encontró el generador {g}. ¿Usar este valor? (s/n): ", end="")
+                if input().strip().lower() in ['s', 'si', 'y', 'yes']:
+                    break
+                else:
+                    g = leer_entero("Ingresa otro valor para G: ")
+            else:
+                print("No se encontró un generador válido. Intenta con otro valor de P.")
+                return
         a = leer_entero("Private_Alice: ")
+        while a < 2 or a > p_ - 2:
+            print("Private_Alice debe estar en el rango [2, P-2].")
+            a = leer_entero("Private_Alice: ")
         b = leer_entero("Private_Bob: ")
+        while b < 2 or b > p_ - 2:
+            print("Private_Bob debe estar en el rango [2, P-2].")
+            b = leer_entero("Private_Bob: ")
+        
+    
         ejecutar_intercambio(p_, g, a, b)
     elif op == "2":
-        p_, g, a, b = 23, 5, 6, 15
+        p_ = random.choice(primos)
+        g = encontrar_generador(p_)
+        if g is None:
+            print(f"No se pudo encontrar un generador para p={p_}. Intentando con otro primo...")
+            p_ = random.choice([p for p in primos if p != p_])
+            g = encontrar_generador(p_)
+        
+        if p_ <= 3:
+            print(f"P={p_} es demasiado pequeño para generar claves privadas válidas. Seleccionando otro primo...")
+            p_ = random.choice([p for p in primos if p > 3])
+            g = encontrar_generador(p_)
+        
+        a = random.randint(2, p_ - 2)
+        b = random.randint(2, p_ - 2)
+        print(f"P={p_}, G={g}, Private_Alice={a}, Private_Bob={b}.")
         ejecutar_intercambio(p_, g, a, b)
     else:
         print("Fin.")
