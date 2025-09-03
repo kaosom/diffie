@@ -2,25 +2,12 @@ import math
 import random
 import builtins
 
-def _alterar_texto(s):
-    if not isinstance(s, str):
-        s = str(s)
-    t = s
-    mapa = str.maketrans("áéíóúÁÉÍÓÚñÑ", "aeiouAEIOUnN")
-    if random.random() < 0.35:
-        t = t.translate(mapa)
-    if random.random() < 0.2:
-        t = t.replace(",", "")
-    if random.random() < 0.4 and t.endswith("."):
-        t = t[:-1]
-    if random.random() < 0.15:
-        t = t + " "
-    return t
+
 
 _builtin_print = builtins.print
 def p(*args, sep=" ", end="\n", flush=False):
     texto = sep.join(str(a) for a in args)
-    _builtin_print(_alterar_texto(texto), end=end, flush=flush)
+    _builtin_print(texto, end=end, flush=flush)
 
 print = p
 
